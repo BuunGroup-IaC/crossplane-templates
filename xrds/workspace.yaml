@@ -1,0 +1,44 @@
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: workspaces.idp.buungroup.com
+spec:
+  group: idp.buungroup.com
+  names:
+    kind: Workspace
+    plural: workspaces
+  scope: Namespaced
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                deploymentId:
+                  type: string
+                  description: Unique deployment identifier
+                deploymentName:
+                  type: string
+                  description: Human-readable deployment name
+                environment:
+                  type: string
+                  enum: [production, staging, development]
+                  default: production
+                customerName:
+                  type: string
+                  description: Customer name (optional)
+              required:
+                - deploymentId
+                - deploymentName
+            status:
+              type: object
+              properties:
+                namespaceName:
+                  type: string
+                configMapName:
+                  type: string
