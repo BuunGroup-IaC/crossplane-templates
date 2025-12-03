@@ -1,0 +1,11 @@
+# Example Workspace XR
+apiVersion: idp.buungroup.com/v1alpha1
+kind: Workspace
+metadata:
+  name: example-workspace
+  namespace: idp-workloads
+spec:
+  deploymentId: example-123
+  deploymentName: Example Workspace
+  environment: development
+  customerName: ACME Corp
