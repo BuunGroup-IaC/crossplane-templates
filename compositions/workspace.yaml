@@ -1,0 +1,73 @@
+apiVersion: apiextensions.crossplane.io/v2
+kind: Composition
+metadata:
+  name: workspace-composition
+  labels:
+    crossplane.io/xrd: workspaces.idp.buungroup.com
+spec:
+  compositeTypeRef:
+    apiVersion: idp.buungroup.com/v1alpha1
+    kind: Workspace
+  mode: Pipeline
+  pipeline:
+    - step: create-namespace
+      functionRef:
+        name: function-go-templating
+      input:
+        apiVersion: gotemplating.fn.crossplane.io/v1beta1
+        kind: GoTemplate
+        source: Inline
+        inline:
+          template: |
+            apiVersion: kubernetes.crossplane.io/v1alpha2
+            kind: Object
+            metadata:
+              name: {{ .observed.composite.resource.spec.deploymentId }}-ns
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: namespace
+            spec:
+              forProvider:
+                manifest:
+                  apiVersion: v1
+                  kind: Namespace
+                  metadata:
+                    name: idp-{{ .observed.composite.resource.spec.deploymentId }}
+                    labels:
+                      idp.buungroup.com/deployment-id: {{ .observed.composite.resource.spec.deploymentId }}
+                      idp.buungroup.com/environment: {{ .observed.composite.resource.spec.environment }}
+                      {{- if .observed.composite.resource.spec.customerName }}
+                      idp.buungroup.com/customer: {{ .observed.composite.resource.spec.customerName | replace " " "-" | lower }}
+                      {{- end }}
+    - step: create-configmap
+      functionRef:
+        name: function-go-templating
+      input:
+        apiVersion: gotemplating.fn.crossplane.io/v1beta1
+        kind: GoTemplate
+        source: Inline
+        inline:
+          template: |
+            apiVersion: kubernetes.crossplane.io/v1alpha2
+            kind: Object
+            metadata:
+              name: {{ .observed.composite.resource.spec.deploymentId }}-cm
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: configmap
+            spec:
+              forProvider:
+                manifest:
+                  apiVersion: v1
+                  kind: ConfigMap
+                  metadata:
+                    name: deployment-config
+                    namespace: idp-{{ .observed.composite.resource.spec.deploymentId }}
+                  data:
+                    DEPLOYMENT_ID: {{ .observed.composite.resource.spec.deploymentId | quote }}
+                    DEPLOYMENT_NAME: {{ .observed.composite.resource.spec.deploymentName | quote }}
+                    ENVIRONMENT: {{ .observed.composite.resource.spec.environment | quote }}
+                    {{- if .observed.composite.resource.spec.customerName }}
+                    CUSTOMER_NAME: {{ .observed.composite.resource.spec.customerName | quote }}
+                    {{- end }}
+    - step: auto-ready
+      functionRef:
+        name: function-auto-ready
